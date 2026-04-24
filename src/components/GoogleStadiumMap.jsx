@@ -204,6 +204,7 @@ const GoogleStadiumMap = ({ isLoaded = false, origin = null, destination = null,
         </div>
 
         {destination && etas && (() => {
+            const recommendedMode = Object.keys(etas).reduce((a, b) => etas[a] < etas[b] ? a : b);
             const modes = [
                 { id: 'taxi', name: 'Cab', link: 'https://book.olacabs.com/', icon: 'fa-taxi' },
                 { id: 'bus', name: 'Bus', link: 'https://mtcbus.tn.gov.in/', icon: 'fa-bus' },

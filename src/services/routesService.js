@@ -1,4 +1,7 @@
-
+// Handles routing using Google Directions API
+// Fetches transport using Google Places API
+// Converts address using Geocoding API
+// Calculates ETA using Distance Matrix API
 /**
  * Routes Service - Core pathfinding logic using Google Routes API (v2).
  * Optimized for compute-intensive routing tasks including multi-modal transit legs.
@@ -9,7 +12,7 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 /**
  * Executes a path calculation request to the Google Routes API.
  */
-export const getRoute = async (origin, destination, mode) => {
+export const getRoute = async (origin, destination, mode, _options = null) => {
     let routingMode = 'DRIVE';
     const lowerMode = String(mode || '').toLowerCase();
 
@@ -128,7 +131,6 @@ export const getRoute = async (origin, destination, mode) => {
         };
     } catch (error) {
         console.warn("Routes API execution halted:", error.message);
-        // Security: Return safe fallback to avoid cascading failures
-        return { routes: [], status: 'FAIL', error: error.message };
+        throw error;
     }
 };

@@ -10,8 +10,16 @@
 import { useState, useCallback } from 'react';
 import { getRouteConfig } from '../utils';
 import { geocodeAddress, getNearbyTransport, getTravelTimes, drawRoute } from '../services';
-import { STADIUM_LOCATIONS as STADIUM_CONSTANTS } from '../config/constants';
-export const STADIUM_LOCATIONS = STADIUM_CONSTANTS;
+
+// Centralized location and transport config
+export const STADIUM_LOCATIONS = {
+    STADIUM_CENTER: { lat: 13.0628, lng: 80.2793 },
+    GATES: [
+        { id: 'gate-3', name: 'Gate 3 (North)', lat: 13.0640, lng: 80.2805 },
+        { id: 'gate-5', name: 'Gate 5 (South)', lat: 13.0610, lng: 80.2770 }
+    ],
+    FOOD: { lat: 13.0632, lng: 80.2798, name: 'Quick Bites' }
+};
 
 /**
  * useMapLogic Hook - Orchestrates stadium navigation state and service interaction
@@ -73,12 +81,12 @@ export const useMapLogic = () => {
      */
     const handleAddressRouteCalculation = useCallback(async (addressString) => {
         try {
-            // Using Geocoding API to resolve address to coordinates
-            const geocodedLocation = await geocodeAddress(addressString);
-            await handleDrawRoute(geocodedLocation, 'address');
-            return { success: true, loc: geocodedLocation };
-        } catch {
-            console.warn(`Routing failed for ${addressString} - geocoding threshold reached.`);
+            // Using geocodeAddress for manual address input
+            const loc = await geocodeAddress(addressString);
+            await handleDrawRoute(loc, 'address');
+            return { success: true, loc };
+        } catch (_e) {
+            console.warn(`Routing failed for ${addressString}.`);
             return { success: false };
         }
     }, [handleDrawRoute]);
@@ -88,31 +96,31 @@ export const useMapLogic = () => {
      * // Using Places API for nearby transport
      */
     const fetchTransitOptions = useCallback(async () => {
-        // Using Google Places API to fetch transport options
-        const rawTransportResults = await getNearbyTransport(STADIUM_LOCATIONS.STADIUM_CENTER);
+        // Using getNearbyTransport to fetch transport options
+        const transportRaw = await getNearbyTransport(STADIUM_LOCATIONS.STADIUM_CENTER);
 
-        // Uses Google Distance Matrix API to calculate tactical travel times
-        if (rawTransportResults && rawTransportResults.length > 0) {
+        // Uses Google Distance Matrix API to calculate travel time
+        if (transportRaw && transportRaw.length > 0) {
             try {
-                const destinationPointers = rawTransportResults.map(transportNode => ({ 
-                    lat: typeof transportNode.lat === 'function' ? transportNode.lat() : transportNode.lat, 
-                    lng: typeof transportNode.lng === 'function' ? transportNode.lng() : transportNode.lng 
+                const destinations = transportRaw.map(t => ({ 
+                    lat: typeof t.lat === 'function' ? t.lat() : t.lat, 
+                    lng: typeof t.lng === 'function' ? t.lng() : t.lng 
                 }));
                 
-                const travelMetrics = await getTravelTimes(STADIUM_LOCATIONS.STADIUM_CENTER, destinationPointers);
+                const times = await getTravelTimes(STADIUM_LOCATIONS.STADIUM_CENTER, destinations);
                 
-                // Combine distance matrix metrics with transport data
-                return rawTransportResults.map((transportNode, idx) => ({
-                    ...transportNode,
-                    travelTime: travelMetrics[idx]?.duration || 'N/A',
-                    travelDistance: travelMetrics[idx]?.distance || 'N/A'
+                // Combine distance matrix results with transport data logic
+                return transportRaw.map((t, idx) => ({
+                    ...t,
+                    travelTime: times[idx]?.duration || 'N/A',
+                    travelDistance: times[idx]?.distance || 'N/A'
                 }));
             } catch (err) {
-                console.warn("Distance Matrix calculation failed - falling back to raw transport telemetry", err);
-                return rawTransportResults;
+                console.warn("Distance Matrix calculation failed internal logic", err);
+                return transportRaw;
             }
         }
-        return rawTransportResults;
+        return transportRaw;
     }, []);
 
     return {

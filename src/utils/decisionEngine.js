@@ -18,7 +18,7 @@ export const calculateSmartDecisions = (sections, amenities, transports) => {
 
     // Optimize Amenities
     const sortedFood = [...(amenities || [])].filter(a => a.type === 'food').sort((a,b) => a.wait - b.wait);
-    const bestFood = sortedFood.length > 0 ? sortedFood[0] : { name: 'Quick Bites', wait: 2, loc: 'Stand D', type: 'Food Hub' };
+    const bestFood = sortedFood.length > 0 ? sortedFood[0] : { name: 'Quick Bites', wait: 2, loc: 'Stand D', type: 'food' };
     const foodReason = `Shortest wait time (${bestFood.wait}m)`;
 
     // Optimize Transport (fallback safely)

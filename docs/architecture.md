@@ -47,23 +47,23 @@ Yellove OS is built on three foundational principles:
 
 # Problem Alignment
 
-Yellove OS is architected to solve the **"Stadium Last-Mile & Congestion Problem"** by mapping technical capabilities directly to real-world fan frustrations.
+Yellove OS is architected to solve the "Stadium Last-Mile Problem" by mapping technical capabilities directly to real-world fan frustrations.
 
 | Problem | Technical Mitigation | System Component |
 |---|---|---|
-| **Crowd Congestion** | Real-time heatmap analysis and reactive re-routing based on stand density. | `StadiumMap` & `decisionEngine.js` |
-| **Inefficient Navigation** | Multi-modal pathfinding that prioritizes low-density gates and "Lowest Friction Paths". | `NavigationService`, `RoutesService` & `useMapLogic` |
-| **Transport Optimization** | Batch ETA comparison across Metro, Train, Bus, and Cab using live distance metrics. | `SmartReturnHub` & `DistanceMatrix API` |
+| **Crowd Congestion** | Real-time heatmap analysis and reactive re-routing. | `StadiumMap` & `decisionEngine` |
+| **Inefficient Navigation** | Multi-modal pathfinding that prioritizes low-density gates. | `NavigationService` & `useMapLogic` |
+| **Transport Decisions** | Batch ETA comparison across 4 transit modes. | `SmartReturnHub` & `DistanceMatrix` |
 
 ## Intelligent Response Flow
-The system processes stadium inquiries through a cascaded intelligence pipeline to solve navigation and transport decision problems:
+The system processes stadium inquiries through a cascaded intelligence pipeline:
 
-1. **User Input**: Conversational intent ("How to beat the crowd?") or Quick Action triggers.
-2. **Geocoding**: Precision mapping of input to `{lat, lng}` using **Google Geocoding API**.
-3. **Transport Options**: Discovery of available transit stations via **Google Places API**.
-4. **ETA Calculation**: Batch performance assessment of all modes via **Google Distance Matrix API**.
-5. **Routing**: Path generation via **Google Directions API** (Multi-modal) or **Routes API** (Direct).
-6. **AI Recommendation**: Final tactical briefing delivered by **Captain AI (Gemini)**.
+1. **User Input**: Conversational query (e.g., "Fastest way to Anna Nagar?").
+2. **Geocoding**: Precision mapping of input to `{lat, lng}` using `geocodeService`.
+3. **Transport Options**: Discovery of available stations via `placesService`.
+4. **ETA Calculation**: Batch performance assessment via `distanceService`.
+5. **Routing**: Path generation via `navigationService` (Transit) or `routesService` (Drive).
+6. **AI Recommendation**: Final tactical briefing delivered by **Captain AI**.
 
 ---
 
@@ -531,32 +531,6 @@ flowchart LR
 | **Memo everything** | All leaf components are wrapped in `React.memo()` to skip re-renders when props haven't changed. |
 | **XSS Safety** | All user-generated input is sanitized through DOMPurify before processing. |
 | **Accessible by default** | ARIA labels, `aria-live` regions, skip-to-content links, keyboard focus management, semantic HTML5 elements. |
-
-## Accessibility Compliance
-Yellove OS is engineered for 98.9%+ accessibility scoring via the following strict enforcements:
-
-1.  **Semantic Interactive Elements**: All interactive controls are implemented using proper `<button>`, `<a>`, or `<input>` elements. High-density `div` proxies have been refactored to native semantics to ensure built-in focus management.
-2.  **ARIA Attribution**: Every interactive element includes a descriptive `aria-label`. Dynamic regions (Alerts, Chat) use `aria-live` and `role="alert"` for real-time screen reader feedback.
-3.  **Keyboard Orchestration**: Full tab-index flow with high-visibility `:focus-visible` states using `#F9CD05` (CSK Gold) outlines. Modals implement focus trapping where required.
-4.  **Contrast & Legibility**: Visual elements use high-contrast glassmorphism with explicit border boundaries and large targets (min 44x44px where applicable).
-
-## Structural Clarity & Layers
-
-### 1. Presentation Layer (React 19)
-- **Lazy Components**: All major modules (`GoogleStadiumMap`, `CaptainAI`, etc.) are lazy-loaded to optimize initial TTI.
-- **Atomic UI**: Reusable components (`QueueCard`, `TimeDisplay`) are pure and rely on props for state.
-
-### 2. Orchestration Layer (Hooks)
-- **Intelligent Bridges**: Hooks like `useMapLogic` and `useStadiumSimulation` bridge the gap between deterministic service data and reactive UI state.
-- **Separation of Concerns**: UI components never fetch data directly; they subscribe to hook-provided telemetry.
-
-### 3. Service Layer (Strategic APIs)
-- **Gemini Service**: Handles AI reasoning and tactical analysis.
-- **Navigation Service**: Cascading logic for Routes, Directions, and Places.
-- **Firebase Service**: Secure authentication and real-time telemetry streaming.
-
-### 4. Utility Layer (Pure Functions)
-- **Deterministic Logic**: `calculateSmartDecisions` and `computeDistance` are pure functions, ensuring high testability and 0% side effects.
 
 ---
 

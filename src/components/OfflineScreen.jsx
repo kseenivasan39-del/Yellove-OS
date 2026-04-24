@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const OfflineScreen = () => {
     const [retryCount, setRetryCount] = useState(0);

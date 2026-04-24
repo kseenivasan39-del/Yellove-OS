@@ -16,7 +16,7 @@ vi.mock('../services', () => ({
 
 // Mock Utils
 vi.mock('../utils', () => ({
-  getRouteConfig: vi.fn((origin, target) => ({
+  getRouteConfig: vi.fn((origin, target, type) => ({
     origin,
     destination: target,
     waypoints: [],

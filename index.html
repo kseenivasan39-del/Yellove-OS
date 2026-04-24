@@ -5,26 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YelloveOS | Smart Stadium</title>
-    <meta name="description" content="AI-powered system to reduce crowd congestion and optimize navigation and transport decisions at MA Chidambaram Stadium." />
-    <meta name="keywords" content="crowd congestion, transport optimization, smart navigation, CSK, Chepauk, Google Maps, Gemini AI" />
     
     <!-- Emergency Boot Interceptor -->
     <script>
-      window.onerror = function(msg, url, line, col, error) {
-        var status = document.getElementById('boot-status');
-        if (status) {
-          status.innerHTML = '<div style="color:#ef4444; font-weight:900; font-size:12px;">[SYSTEM_CRASH] ' + msg + '<br/>Line: ' + line + '</div>';
-        }
-        console.error("BOOT_CRASH:", msg, error);
+      window.onerror = function(msg, url, line) {
+        document.getElementById('boot-status').innerHTML = '<div style="color:#ef4444; font-weight:900;">[CRITICAL_FAILURE] ' + msg + '</div>';
+        document.getElementById('boot-loader').style.borderColor = '#ef4444';
         return false;
-      };
-      
-      // Catch unhandled promise rejections
-      window.onunhandledrejection = function(event) {
-        var status = document.getElementById('boot-status');
-        if (status) {
-          status.innerHTML = '<div style="color:#f97316; font-weight:900; font-size:12px;">[PROMISE_REJECTION] ' + event.reason + '</div>';
-        }
       };
       console.log("Tactical Uplink: Initializing Boot Sequence...");
     </script>

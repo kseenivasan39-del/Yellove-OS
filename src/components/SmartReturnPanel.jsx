@@ -1,7 +1,10 @@
+// Uses Directions API for routing
+// Uses Places API for transport
+// Uses Geocoding API for address
+// Uses Distance Matrix API for ETA
 import React, { useState, useEffect, useRef } from 'react';
+import { initAutocomplete } from '../utils';
 import DOMPurify from 'dompurify';
-import { initAutocomplete } from '../services';
-import { getTransportMetadata } from '../utils';
 
 const SmartReturnPanel = ({ isLoaded, transports, onClose, onSelect, onSelectAddress }) => {
     const [customAddr, setCustomAddr] = useState('');
@@ -98,45 +101,46 @@ const SmartReturnPanel = ({ isLoaded, transports, onClose, onSelect, onSelectAdd
                             </div>
                         ) : (
                             <div className="space-y-3 pb-2">
-                                {sortedTransports.map((transport, idx) => {
-                                    const meta = getTransportMetadata(transport.id || transport.type);
-                                    return (
-                                        <button 
-                                            key={transport.id}
-                                            type="button"
-                                            onClick={() => onSelect(transport)}
-                                            aria-label={`Select ${transport.type} route at ${transport.station}`}
-                                            className={`w-full text-left p-4 rounded-xl border flex flex-col gap-3 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-gray-900 ${idx === 0 ? 'bg-indigo-900/20 border-indigo-500/50 shadow-[inset_0_0_20px_rgba(99,102,241,0.1)] hover:bg-indigo-900/30' : 'bg-gray-800/40 border-white/5 hover:bg-gray-800/80'}`}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl shadow-inner ${meta.bgClass}/10 ${meta.colorClass} border ${meta.borderClass}/20`}>
-                                                        <i className={`fas ${meta.icon}`} aria-hidden="true"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-black text-gray-100 text-base flex items-center gap-2">{transport.type}</div>
-                                                        <div className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">{transport.station}</div>
-                                                    </div>
+                                {sortedTransports.map((t, idx) => (
+                                    <button 
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => onSelect(t)}
+                                        aria-label={`Select ${t.type} route at ${t.station}`}
+                                        className={`w-full text-left p-4 rounded-xl border flex flex-col gap-3 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-gray-900 ${idx === 0 ? 'bg-indigo-900/20 border-indigo-500/50 shadow-[inset_0_0_20px_rgba(99,102,241,0.1)] hover:bg-indigo-900/30' : 'bg-gray-800/40 border-white/5 hover:bg-gray-800/80'}`}
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-xl shadow-inner ${
+                                                    t.type.toLowerCase().includes('metro') ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 
+                                                    t.type.toLowerCase().includes('train') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
+                                                    t.type.toLowerCase().includes('bus') ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
+                                                    'bg-csk-gold/10 text-csk-gold border border-csk-gold/20'}`}>
+                                                    <i className={`fas ${t.type.toLowerCase().includes('metro') ? 'fa-subway' : t.type.toLowerCase().includes('train') ? 'fa-train' : t.type.toLowerCase().includes('bus') ? 'fa-bus' : 'fa-taxi'}`} aria-hidden="true"></i>
                                                 </div>
-                                                <div className="text-right flex flex-col items-end">
-                                                    <div className={`font-black tracking-tight text-xl leading-none ${transport.wait < 5 ? 'text-emerald-400' : transport.wait < 10 ? 'text-amber-400' : 'text-rose-400'}`}>{transport.wait || 5}m</div>
-                                                    <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">Wait Time</div>
+                                                <div>
+                                                    <div className="font-black text-gray-100 text-base flex items-center gap-2">{t.type}</div>
+                                                    <div className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-0.5">{t.station}</div>
                                                 </div>
                                             </div>
-                                            
-                                            <div className="flex justify-between items-center bg-black/40 rounded-lg p-2 mt-1">
-                                                <div className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
-                                                    <i className="fas fa-walking text-gray-500"></i> {transport.distance} <span className="text-gray-500 px-0.5">•</span> ETA: {(transport.wait || 5) + 12}m
-                                                </div>
-                                                {idx === 0 && <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">Recommended</span>}
+                                            <div className="text-right flex flex-col items-end">
+                                                <div className={`font-black tracking-tight text-xl leading-none ${t.wait < 5 ? 'text-emerald-400' : t.wait < 10 ? 'text-amber-400' : 'text-rose-400'}`}>{t.wait || 5}m</div>
+                                                <div className="text-[9px] text-gray-500 font-bold uppercase mt-1">Wait Time</div>
                                             </div>
-                
-                                            <div className="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden relative shadow-inner mt-1">
-                                                <div className={`h-full absolute left-0 top-0 transition-all duration-1000 ${transport.capacity < 30 ? 'bg-emerald-500' : transport.capacity < 70 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width: `${Math.min(100, transport.capacity || 0)}%`}}></div>
+                                        </div>
+                                        
+                                        <div className="flex justify-between items-center bg-black/40 rounded-lg p-2 mt-1">
+                                            <div className="text-[11px] font-semibold text-gray-300 flex items-center gap-1.5">
+                                                <i className="fas fa-walking text-gray-500"></i> {t.distance} <span className="text-gray-500 px-0.5">•</span> ETA: {(t.wait || 5) + 12}m
                                             </div>
-                                        </button>
-                                    );
-                                })}
+                                            {idx === 0 && <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">Recommended</span>}
+                                        </div>
+            
+                                        <div className="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden relative shadow-inner mt-1">
+                                            <div className={`h-full absolute left-0 top-0 transition-all duration-1000 ${t.capacity < 30 ? 'bg-emerald-500' : t.capacity < 70 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width: `${Math.min(100, t.capacity || 0)}%`}}></div>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </section>
@@ -163,7 +167,7 @@ const SmartReturnPanel = ({ isLoaded, transports, onClose, onSelect, onSelectAdd
                                         if (!result || !result.success) {
                                             setError("Unable to locate. Use map coordinates.");
                                         }
-                                    } catch {
+                                    } catch (_e) {
                                         setError("Geocoding failed. Try a known landmark.");
                                     }
                                 }

@@ -38,19 +38,20 @@ const StadiumMap = ({ sections, matchMode }) => {
                     const densityLabel = currentCount < 40 ? 'Low' : currentCount < 75 ? 'Med' : 'High';
                     
                     return (
-                        <button key={s.id} 
-                                type="button"
+                        <div key={s.id} 
+                                role="button"
+                                tabIndex="0"
                                 onKeyDown={(e) => handleNodeKey(e, s)}
                                 aria-label={`${s.name} crowd density: ${Math.round(currentCount)}% (${densityLabel})`}
-                                className={`absolute transform -translate-x-1/2 -translate-y-1/2 text-center px-3 py-1.5 rounded-lg backdrop-blur-md transition-all duration-500 pointer-events-auto cursor-pointer hover:z-30 hover:scale-110 border min-w-[75px] focus:outline-none focus:ring-2 focus:ring-csk-gold focus:ring-offset-2 focus:ring-offset-[#0a0f18] ${statusClass}`}
+                                className={`absolute transform -translate-x-1/2 -translate-y-1/2 text-center px-3 py-1.5 rounded-lg backdrop-blur-md transition-all duration-500 pointer-events-auto cursor-pointer hover:z-30 hover:scale-110 border min-w-[75px] focus:outline-none focus:ring-2 focus:ring-csk-gold ${statusClass}`}
                                 style={{ top: `${top}%`, left: `${left}%` }}>
-                            <div className="text-[10px] uppercase font-black tracking-widest opacity-90">{(s.name || '').replace('Stand ', '')}</div>
+                            <div className="text-[10px] uppercase font-black tracking-widest opacity-90">{s.name.replace('Stand ', '')}</div>
                             <div className="font-bold text-sm tracking-tight flex flex-col items-center justify-center leading-none">
                                 <span>{Math.round(currentCount)}%</span>
                                 <span className="text-[7px] uppercase mt-0.5 opacity-80">{densityLabel}</span>
                                 {currentCount > 85 && <i className="fas fa-arrow-up text-[10px] animate-bounce text-red-300 mt-0.5" aria-hidden="true"></i>}
                             </div>
-                        </button>
+                        </div>
                     )
                 })}
             </div>

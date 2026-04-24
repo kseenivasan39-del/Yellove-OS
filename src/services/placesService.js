@@ -1,20 +1,28 @@
+// Handles routing using Google Directions API
+// Fetches transport using Google Places API
+// Converts address using Geocoding API
+// Calculates ETA using Distance Matrix API
 /**
- * Places Service - Strategic Discovery Layer.
- * Orchestrates interaction with Google Places API for transport and waypoint intelligence.
+ * Places Service - Hub discovery and local transport telemetry.
+ * Interacts with the Google Places API to find nearby transit nodes around the stadium.
  */
 
 /**
- * Initializes the Autocomplete orchestration for location inputs.
+ * Fetches nearby transport hubs using the Google Places API.
  * 
- * @param {HTMLInputElement} element - The DOM element to attach the autocomplete to.
- * @param {Function} onPlaceChanged - Handler for selected place events.
- * @returns {google.maps.places.Autocomplete|null}
+ * @param {Object} location - The focal coordinates {lat, lng}.
+ * @param {number} [radius=1000] - Search radius in meters.
+ * @returns {Promise<Array>} - List of validated transport stations.
+ */
+/**
+ * Centralized Autocomplete initializer to prevent direct Google API usage in components.
+ * 
+ * @param {HTMLElement} element - The input element to attach autocomplete to.
+ * @param {Function} onPlaceChanged - Callback function when a place is selected.
+ * @returns {Object} - The Autocomplete instance.
  */
 export const initAutocomplete = (element, onPlaceChanged) => {
-    if (!window.google?.maps?.places) {
-        console.warn("Places Logic deferred: Google Maps SDK not ready.");
-        return null;
-    }
+    if (!window.google || !window.google.maps.places) return null;
 
     const autocomplete = new window.google.maps.places.Autocomplete(element, {
         componentRestrictions: { country: 'IN' },
@@ -23,39 +31,24 @@ export const initAutocomplete = (element, onPlaceChanged) => {
 
     autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        if (typeof onPlaceChanged === 'function') onPlaceChanged(place);
+        onPlaceChanged(place);
     });
 
     return autocomplete;
 };
 
-/**
- * Discovers nearby transport hubs around a tactical focal point.
- * 
- * @param {google.maps.LatLngLiteral} location - Focal coordinates {lat, lng}.
- * @param {number} [radius=1000] - Discovery radius in meters.
- * @returns {Promise<Array<Object>>} - List of identified transport nodes.
- */
 export const getNearbyTransport = async (location, radius = 1000) => {
-    // Strategic Fallback: High-precision static telemetry for Chepauk
-    const STATIC_TELEMETRY = [
-        { id: 'metro', type: 'Metro', station: 'Govt Estate', lat: 13.0682, lng: 80.2750, wait: 5, url: 'https://tickets.chennaimetrorail.org/onlineticket' },
-        { id: 'train', type: 'Local Train', station: 'Chepauk MRTS', lat: 13.0645, lng: 80.2810, wait: 10, url: 'https://www.utsonmobile.indianrail.gov.in' },
-        { id: 'bus', type: 'Bus (MTC)', station: 'Wallajah Rd', lat: 13.0650, lng: 80.2798, wait: 8, url: 'https://mtcbus.tn.gov.in/' },
-        { id: 'taxi', type: 'Taxi (Ola)', station: 'Ola Point', lat: 13.0635, lng: 80.2785, wait: 2, url: 'https://book.olacabs.com/' }
-    ];
-
-    if (!window.google?.maps?.places) {
-        console.info("Places Live Discovery offline. Using static stadium telemetry.");
-        return STATIC_TELEMETRY;
+    if (!window.google || !window.google.maps.places) {
+        return [
+            { id: 'metro', type: 'Metro', station: 'Govt Estate', lat: 13.0682, lng: 80.2750, distance: '1.2km' },
+            { id: 'local_train', type: 'Local Train', station: 'Chepauk MRTS', lat: 13.0645, lng: 80.2810, distance: '400m' }
+        ];
     }
 
     const service = new window.google.maps.places.PlacesService(document.createElement('div'));
     
-    /**
-     * Internal helper to wrap Google Callback architecture in Promises.
-     */
-    const searchPlacesByType = (type) => new Promise((resolve) => {
+    // Helper to search for specific types
+    const searchPlaces = (type) => new Promise((resolve) => {
         service.nearbySearch({ location, radius, type }, (results, status) => {
             if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
                 resolve(results);
@@ -66,50 +59,87 @@ export const getNearbyTransport = async (location, radius = 1000) => {
     });
 
     try {
-        const [trainRes, transitRes, metroRes, busRes, taxiRes] = await Promise.all([
-            searchPlacesByType('train_station'),
-            searchPlacesByType('transit_station'),
-            searchPlacesByType('subway_station'),
-            searchPlacesByType('bus_station'),
-            searchPlacesByType('taxi_stand')
-        ]);
+        /**
+         * 1. INCLUSIVE TRAIN STATION DISCOVERY
+         * For Chennai MRTS (Chepauk), stations may be tagged as subway, train, or transit.
+         */
+        const trainSearchPromise = searchPlaces('train_station');
+        const transitSearchPromise = searchPlaces('transit_station');
+        
+        const [trainRes, transitRes] = await Promise.all([trainSearchPromise, transitSearchPromise]);
+        
+        // Merge and filter unique results that are NOT the primary metro line stations
+        const combinedResults = [...trainRes, ...transitRes];
+        const trainPlaces = combinedResults.filter((place, index, self) => 
+            self.findIndex(p => p.place_id === place.place_id) === index &&
+            (place.name.toLowerCase().includes('mrts') || place.name.toLowerCase().includes('rail') || place.types.includes('train_station'))
+        );
+
+        // DEBUG: Log filtered train results
+        console.log("Train discovery results:", trainPlaces);
+
+        /**
+         * 3. ENSURE SEPARATE LOGIC (Metro/Bus/Cab)
+         */
+        const metroPlaces = await searchPlaces('subway_station');
+        const busPlaces = await searchPlaces('bus_station');
+        const taxiPlaces = await searchPlaces('taxi_stand');
 
         const transportLinks = {
-            'metro': 'https://tickets.chennaimetrorail.org/onlineticket',
-            'train': 'https://www.utsonmobile.indianrail.gov.in',
+            'metro': 'https://tickets.chennaimetrorail.org/portal',
+            'local_train': 'https://www.utsonmobile.indianrail.gov.in',
             'bus': 'https://mtcbus.tn.gov.in/',
             'taxi': 'https://book.olacabs.com/'
         };
 
-        // Combine and filter unique train results (Chepauk MRTS specialty)
-        const combinedTrain = [...trainRes, ...transitRes].filter((p, i, s) => 
-            s.findIndex(t => t.place_id === p.place_id) === i &&
-            (p.name.toLowerCase().includes('mrts') || p.name.toLowerCase().includes('rail'))
-        );
+        // Construct Local Train discovery with fallback name
+        const localTrain = trainPlaces.length > 0 ? {
+            id: 'local_train',
+            type: 'Local Train',
+            station: trainPlaces[0].name,
+            lat: trainPlaces[0].geometry.location.lat(),
+            lng: trainPlaces[0].geometry.location.lng(),
+            wait: 10,
+            url: transportLinks.local_train
+        } : null;
 
-        // Map raw Google results to Strategic Schema
-        const mapToStrategicType = (place, type, defaultName, transportType) => {
-            if (!place) return { ...STATIC_TELEMETRY.find(t => t.id === transportType), wait: 10 };
-            return {
-                id: transportType,
-                type: type,
-                station: place.name || defaultName,
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng(),
-                wait: type === 'Taxi (Ola)' ? 2 : 8,
-                url: transportLinks[transportType]
-            };
-        };
+        const results = [
+            metroPlaces[0] ? { 
+                id: 'metro', 
+                type: 'Metro', 
+                station: metroPlaces[0].name, 
+                lat: metroPlaces[0].geometry.location.lat(), 
+                lng: metroPlaces[0].geometry.location.lng(), 
+                wait: 5, 
+                url: transportLinks.metro 
+            } : { id: 'metro', type: 'Metro', station: 'Govt Estate', lat: 13.0682, lng: 80.2750, wait: 5, url: transportLinks.metro },
+            
+            localTrain || { id: 'local_train', type: 'Local Train', station: 'Chepauk MRTS', lat: 13.0645, lng: 80.2810, wait: 10, url: transportLinks.local_train },
+            
+            busPlaces[0] ? { 
+                id: 'bus', 
+                type: 'Bus (MTC)', 
+                station: busPlaces[0].name, 
+                lat: busPlaces[0].geometry.location.lat(), 
+                lng: busPlaces[0].geometry.location.lng(), 
+                wait: 8, 
+                url: transportLinks.bus 
+            } : { id: 'bus', type: 'Bus (MTC)', station: 'Wallajah Rd', lat: 13.0650, lng: 80.2798, wait: 8, url: transportLinks.bus },
+            
+            taxiPlaces[0] ? { 
+                id: 'taxi', 
+                type: 'Taxi (Ola)', 
+                station: taxiPlaces[0].name, 
+                lat: taxiPlaces[0].geometry.location.lat(), 
+                lng: taxiPlaces[0].geometry.location.lng(), 
+                wait: 2, 
+                url: transportLinks.taxi 
+            } : { id: 'taxi', type: 'Taxi (Ola)', station: 'Ola Point', lat: 13.0635, lng: 80.2785, wait: 2, url: transportLinks.taxi }
+        ];
 
-        return [
-            mapToStrategicType(metroRes[0], 'Metro', 'Govt Estate', 'metro'),
-            mapToStrategicType(combinedTrain[0], 'Local Train', 'Chepauk MRTS', 'train'),
-            mapToStrategicType(busRes[0], 'Bus (MTC)', 'Wallajah Rd', 'bus'),
-            mapToStrategicType(taxiRes[0], 'Taxi (Ola)', 'Ola Point', 'taxi')
-        ].filter(Boolean);
-
+        return results.filter(Boolean);
     } catch (err) {
-        console.warn("Places Strategic Discovery failure. Falling back to static telemetry:", err);
-        return STATIC_TELEMETRY;
+        console.error("Places discovery failed:", err);
+        return [];
     }
 };

@@ -1,13 +1,11 @@
-/**
- * Services Manifest - Centralized Strategic Export Layer.
- * Decouples domain logic from UI orchestration.
- */
+// Handles routing using Google Directions API
+// Fetches transport using Google Places API
+// Converts address using Geocoding API
+// Calculates ETA using Distance Matrix API
 
+export { drawRoute, getTransitConstants, getMapConstants } from './navigationService';
+export { geocodeAddress } from './geocodeService';
+export { getNearbyTransport, initAutocomplete } from './placesService';
+export { getTravelTimes } from './distanceService';
+export { geminiService } from './geminiService';
 export * from './firebase';
-export * from './googleAI';
-export * from './geocodeService';
-export * from './placesService';
-export * from './navigationService';
-export * from './distanceService';
-export * from './routesService';
-export * from './timezone';

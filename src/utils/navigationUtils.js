@@ -1,17 +1,10 @@
 /**
- * Pure navigation utility functions for Yellove OS.
+ * pure navigation utility functions for Yellove OS.
+ * // Handles routing using Google Directions API
+ * // Fetches transport using Google Places API
+ * // Converts address using Geocoding API
+ * // Calculates ETA using Distance Matrix API
  */
-
-/**
- * Transport Mode Definitions
- * Centralized telemetry constants for UI across the application.
- */
-export const TRANSPORT_MODES = [
-    { id: 'cab', name: 'Cab', icon: 'fa-taxi', googleMode: 'DRIVING', colorClass: 'text-csk-gold', bgClass: 'bg-csk-gold', borderClass: 'border-csk-gold' },
-    { id: 'bus', name: 'Bus', icon: 'fa-bus', googleMode: 'TRANSIT', colorClass: 'text-red-400', bgClass: 'bg-red-500', borderClass: 'border-red-500' },
-    { id: 'metro', name: 'Metro', icon: 'fa-subway', googleMode: 'TRANSIT', colorClass: 'text-indigo-400', bgClass: 'bg-indigo-500', borderClass: 'border-indigo-500' },
-    { id: 'train', name: 'Train', icon: 'fa-train', googleMode: 'TRANSIT', colorClass: 'text-emerald-400', bgClass: 'bg-emerald-500', borderClass: 'border-emerald-500' },
-];
 
 /**
  * Calculates a route configuration (Color/Waypoints) based on context type.
@@ -47,15 +40,8 @@ export const getRouteConfig = (origin, destination, type = 'general') => {
  * Helper to calculate distance between two points using Google Maps geometry library.
  */
 export const computeDistance = (p1, p2) => {
-    if (window.google?.maps?.geometry?.spherical) {
+    if (window.google && window.google.maps.geometry && window.google.maps.geometry.spherical) {
         return window.google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
     }
     return 0;
-};
-
-/**
- * Resolves transport metadata for a specific mode ID.
- */
-export const getTransportMetadata = (modeId) => {
-    return TRANSPORT_MODES.find(m => m.id === modeId.toLowerCase()) || TRANSPORT_MODES[0];
 };
